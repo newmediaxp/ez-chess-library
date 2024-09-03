@@ -6,10 +6,11 @@
     {
         public readonly ChessPieceType type;
         public readonly ChessPieceColor color;
-        private readonly int m_direction, m_limit, m_maxMoves;
-        private bool m_lastMovedPiece;
         public Coordinate2D Position { get; private set; }
         public int MoveCount { get; private set; }
+
+        private bool lastMovedPiece;
+        private readonly int direction, limit, maxMoves;
 
         private ChessPiece() { }
 
@@ -19,16 +20,16 @@
             color = p_color;
             Position = p_position;
             MoveCount = 0;
-            m_lastMovedPiece = false;
-            m_direction = p_color == ChessPieceColor.White ? 1 : -1;
-            m_limit = System.Math.Max(ChessBoard.ROWS, ChessBoard.COLUMNS);
-            m_maxMoves = p_type.GetMaxMoves();
+            lastMovedPiece = false;
+            direction = p_color == ChessPieceColor.White ? 1 : -1;
+            limit = System.Math.Max(ChessBoard.rows, ChessBoard.columns);
+            maxMoves = p_type.GetMaxMoves();
         }
 
         internal ChessPiece CreateDeepClone() => new ChessPiece(type, color, Position)
         {
             MoveCount = MoveCount,
-            m_lastMovedPiece = m_lastMovedPiece,
+            lastMovedPiece = lastMovedPiece,
         };
 
         internal void ChangePosition(in Coordinate2D p_position)
@@ -39,11 +40,11 @@
 
         internal void MarkAsLastMovedPiece(in ChessBoard p_board)
         {
-            ChessPiece? piece;
-            for (int i = 0; i < p_board.MaxPiecesCount; ++i)
+            ChessPiece? _piece;
+            for (int i = 0; i < ChessBoard.maxPiecesCount; ++i)
             {
-                piece = p_board.GetPieceAt(i);
-                if (piece != null) piece.m_lastMovedPiece = piece == this;
+                _piece = p_board.GetPieceAt(i);
+                if (_piece != null) _piece.lastMovedPiece = _piece == this;
             }
         }
 
@@ -60,75 +61,75 @@
 
         private List<ChessMove> FindMoves_Pawn(in ChessBoard p_board)
         {
-            List<ChessMove> moves = new List<ChessMove>(m_maxMoves);
-            Coordinate2D testPos, enPassPos;
-            ChessPiece? testPos_piece, enPassPos_piece;
+            List<ChessMove> _moves = new List<ChessMove>(maxMoves);
+            Coordinate2D _testPos, _enPassPos;
+            ChessPiece? _testPos_piece, _enPassPos_piece;
             // forward tiles
-            for (int t = 1; t <= 2; ++t)
+            for (int i_f = 1; i_f <= 2; ++i_f)
             {
-                testPos = new Coordinate2D(Position.x, Position.y + m_direction * t);
-                if (!testPos.IsValid()) break;
-                testPos_piece = p_board.GetPieceAt(testPos.GetIndex());
-                if (testPos_piece != null || (t > 1 && MoveCount > 0)) break;
-                if ((color == ChessPieceColor.White && testPos.y == ChessBoard.ROWS) || (color == ChessPieceColor.Black && testPos.y == 1))
-                    moves.Add(new ChessMove(Position, testPos, ChessPieceType.Queen)); //PawnPromotion
-                else moves.Add(new ChessMove(Position, testPos));
+                _testPos = new Coordinate2D(Position.x, Position.y + direction * i_f);
+                if (!_testPos.IsValid()) break;
+                _testPos_piece = p_board.GetPieceAt(_testPos.GetIndex());
+                if (_testPos_piece != null || (i_f > 1 && MoveCount > 0)) break;
+                if ((color == ChessPieceColor.White && _testPos.y == ChessBoard.rows) || (color == ChessPieceColor.Black && _testPos.y == 1))
+                    _moves.Add(new ChessMove(Position, _testPos, ChessPieceType.Queen)); //PawnPromotion
+                else _moves.Add(new ChessMove(Position, _testPos));
             }
             // corner tiles
-            for (int d = 1; d <= 2; ++d)
+            for (int i_c = 1; i_c <= 2; ++i_c)
             {
-                testPos = d == 1 ? new Coordinate2D(Position.x + 1, Position.y + m_direction) : new Coordinate2D(Position.x - 1, Position.y + m_direction);
-                enPassPos = d == 1 ? new Coordinate2D(Position.x + 1, Position.y) : new Coordinate2D(Position.x - 1, Position.y);
-                if (!testPos.IsValid()) continue;
-                testPos_piece = p_board.GetPieceAt(testPos.GetIndex());
-                if (testPos_piece != null && testPos_piece.color != color) moves.Add(new ChessMove(Position, testPos));
-                if (!enPassPos.IsValid()) continue;
-                enPassPos_piece = p_board.GetPieceAt(enPassPos.GetIndex());
-                if (testPos_piece == null && enPassPos_piece != null && enPassPos_piece.color != color && enPassPos_piece.type == ChessPieceType.Pawn && enPassPos_piece.m_lastMovedPiece && enPassPos_piece.MoveCount == 1) moves.Add(new ChessMove(Position, testPos, enPassPos)); //EnPassant
+                _testPos = i_c == 1 ? new Coordinate2D(Position.x + 1, Position.y + direction) : new Coordinate2D(Position.x - 1, Position.y + direction);
+                _enPassPos = i_c == 1 ? new Coordinate2D(Position.x + 1, Position.y) : new Coordinate2D(Position.x - 1, Position.y);
+                if (!_testPos.IsValid()) continue;
+                _testPos_piece = p_board.GetPieceAt(_testPos.GetIndex());
+                if (_testPos_piece != null && _testPos_piece.color != color) _moves.Add(new ChessMove(Position, _testPos));
+                if (!_enPassPos.IsValid()) continue;
+                _enPassPos_piece = p_board.GetPieceAt(_enPassPos.GetIndex());
+                if (_testPos_piece == null && _enPassPos_piece != null && _enPassPos_piece.color != color && _enPassPos_piece.type == ChessPieceType.Pawn && _enPassPos_piece.lastMovedPiece && _enPassPos_piece.MoveCount == 1) _moves.Add(new ChessMove(Position, _testPos, _enPassPos)); //EnPassant
             }
-            return moves;
+            return _moves;
         }
 
         private List<ChessMove> FindMoves_Rook(in ChessBoard p_board)
         {
-            List<ChessMove> moves = new List<ChessMove>(m_maxMoves);
-            Coordinate2D testPos;
-            ChessPiece? testPos_piece;
+            List<ChessMove> _moves = new List<ChessMove>(maxMoves);
+            Coordinate2D _testPos;
+            ChessPiece? _testPos_piece;
             // horizontal and vertical tiles
-            for (int d = 1; d <= 4; ++d)
+            for (int i_a = 1; i_a <= 4; ++i_a)
             {
-                for (int t = 1; t <= m_limit; ++t)
+                for (int i_f = 1; i_f <= limit; ++i_f)
                 {
-                    testPos = d switch
+                    _testPos = i_a switch
                     {
-                        1 => new Coordinate2D(Position.x + t, Position.y),
-                        2 => new Coordinate2D(Position.x - t, Position.y),
-                        3 => new Coordinate2D(Position.x, Position.y + t),
-                        4 => new Coordinate2D(Position.x, Position.y - t),
+                        1 => new Coordinate2D(Position.x + i_f, Position.y),
+                        2 => new Coordinate2D(Position.x - i_f, Position.y),
+                        3 => new Coordinate2D(Position.x, Position.y + i_f),
+                        4 => new Coordinate2D(Position.x, Position.y - i_f),
                         _ => throw new System.NotImplementedException(),
                     };
-                    if (!testPos.IsValid()) break;
-                    testPos_piece = p_board.GetPieceAt(testPos.GetIndex());
-                    if (testPos_piece != null)
+                    if (!_testPos.IsValid()) break;
+                    _testPos_piece = p_board.GetPieceAt(_testPos.GetIndex());
+                    if (_testPos_piece != null)
                     {
-                        if (testPos_piece.color != color) moves.Add(new ChessMove(Position, testPos));
+                        if (_testPos_piece.color != color) _moves.Add(new ChessMove(Position, _testPos));
                         break;
                     }
-                    moves.Add(new ChessMove(Position, testPos));
+                    _moves.Add(new ChessMove(Position, _testPos));
                 }
             }
-            return moves;
+            return _moves;
         }
 
         private List<ChessMove> FindMoves_Knight(in ChessBoard p_board)
         {
-            List<ChessMove> moves = new List<ChessMove>(m_maxMoves);
-            Coordinate2D testPos;
-            ChessPiece? testPos_piece;
+            List<ChessMove> _moves = new List<ChessMove>(maxMoves);
+            Coordinate2D _testPos;
+            ChessPiece? _testPos_piece;
             // surrounding tiles
-            for (int d = 1; d <= 8; ++d)
+            for (int i_a = 1; i_a <= 8; ++i_a)
             {
-                testPos = d switch
+                _testPos = i_a switch
                 {
                     1 => new Coordinate2D(Position.x + 1, Position.y + 2),
                     2 => new Coordinate2D(Position.x - 1, Position.y + 2),
@@ -140,88 +141,88 @@
                     8 => new Coordinate2D(Position.x - 2, Position.y - 1),
                     _ => throw new System.NotImplementedException(),
                 };
-                if (!testPos.IsValid()) continue;
-                testPos_piece = p_board.GetPieceAt(testPos.GetIndex());
-                if (testPos_piece == null || (testPos_piece != null && testPos_piece.color != color)) moves.Add(new ChessMove(Position, testPos));
+                if (!_testPos.IsValid()) continue;
+                _testPos_piece = p_board.GetPieceAt(_testPos.GetIndex());
+                if (_testPos_piece == null || (_testPos_piece != null && _testPos_piece.color != color)) _moves.Add(new ChessMove(Position, _testPos));
             }
-            return moves;
+            return _moves;
         }
 
         private List<ChessMove> FindMoves_Bishop(in ChessBoard p_board)
         {
-            List<ChessMove> moves = new List<ChessMove>(m_maxMoves);
-            Coordinate2D testPos;
-            ChessPiece? testPos_piece;
+            List<ChessMove> _moves = new List<ChessMove>(maxMoves);
+            Coordinate2D _testPos;
+            ChessPiece? _testPos_piece;
             // diagonal tiles
-            for (int d = 1; d <= 4; ++d)
+            for (int i_a = 1; i_a <= 4; ++i_a)
             {
-                for (int t = 1; t <= m_limit; ++t)
+                for (int i_f = 1; i_f <= limit; ++i_f)
                 {
-                    testPos = d switch
+                    _testPos = i_a switch
                     {
-                        1 => new Coordinate2D(Position.x + t, Position.y + t),
-                        2 => new Coordinate2D(Position.x - t, Position.y + t),
-                        3 => new Coordinate2D(Position.x + t, Position.y - t),
-                        4 => new Coordinate2D(Position.x - t, Position.y - t),
+                        1 => new Coordinate2D(Position.x + i_f, Position.y + i_f),
+                        2 => new Coordinate2D(Position.x - i_f, Position.y + i_f),
+                        3 => new Coordinate2D(Position.x + i_f, Position.y - i_f),
+                        4 => new Coordinate2D(Position.x - i_f, Position.y - i_f),
                         _ => throw new System.NotImplementedException(),
                     };
-                    if (!testPos.IsValid()) break;
-                    testPos_piece = p_board.GetPieceAt(testPos.GetIndex());
-                    if (testPos_piece != null)
+                    if (!_testPos.IsValid()) break;
+                    _testPos_piece = p_board.GetPieceAt(_testPos.GetIndex());
+                    if (_testPos_piece != null)
                     {
-                        if (testPos_piece.color != color) moves.Add(new ChessMove(Position, testPos));
+                        if (_testPos_piece.color != color) _moves.Add(new ChessMove(Position, _testPos));
                         break;
                     }
-                    moves.Add(new ChessMove(Position, testPos));
+                    _moves.Add(new ChessMove(Position, _testPos));
                 }
             }
-            return moves;
+            return _moves;
         }
 
         private List<ChessMove> FindMoves_Queen(in ChessBoard p_board)
         {
-            List<ChessMove> moves = new List<ChessMove>(m_maxMoves);
-            Coordinate2D testPos;
-            ChessPiece? testPos_piece;
+            List<ChessMove> _moves = new List<ChessMove>(maxMoves);
+            Coordinate2D _testPos;
+            ChessPiece? _testPos_piece;
             // horizontal, vertical and diagonal tiles
-            for (int d = 1; d <= 8; ++d)
+            for (int i_a = 1; i_a <= 8; ++i_a)
             {
-                for (int t = 1; t <= m_limit; ++t)
+                for (int i_f = 1; i_f <= limit; ++i_f)
                 {
-                    testPos = d switch
+                    _testPos = i_a switch
                     {
-                        1 => new Coordinate2D(Position.x + t, Position.y),
-                        2 => new Coordinate2D(Position.x - t, Position.y),
-                        3 => new Coordinate2D(Position.x, Position.y + t),
-                        4 => new Coordinate2D(Position.x, Position.y - t),
-                        5 => new Coordinate2D(Position.x + t, Position.y + t),
-                        6 => new Coordinate2D(Position.x - t, Position.y + t),
-                        7 => new Coordinate2D(Position.x + t, Position.y - t),
-                        8 => new Coordinate2D(Position.x - t, Position.y - t),
+                        1 => new Coordinate2D(Position.x + i_f, Position.y),
+                        2 => new Coordinate2D(Position.x - i_f, Position.y),
+                        3 => new Coordinate2D(Position.x, Position.y + i_f),
+                        4 => new Coordinate2D(Position.x, Position.y - i_f),
+                        5 => new Coordinate2D(Position.x + i_f, Position.y + i_f),
+                        6 => new Coordinate2D(Position.x - i_f, Position.y + i_f),
+                        7 => new Coordinate2D(Position.x + i_f, Position.y - i_f),
+                        8 => new Coordinate2D(Position.x - i_f, Position.y - i_f),
                         _ => throw new System.NotImplementedException(),
                     };
-                    if (!testPos.IsValid()) break;
-                    testPos_piece = p_board.GetPieceAt(testPos.GetIndex());
-                    if (testPos_piece != null)
+                    if (!_testPos.IsValid()) break;
+                    _testPos_piece = p_board.GetPieceAt(_testPos.GetIndex());
+                    if (_testPos_piece != null)
                     {
-                        if (testPos_piece.color != color) moves.Add(new ChessMove(Position, testPos));
+                        if (_testPos_piece.color != color) _moves.Add(new ChessMove(Position, _testPos));
                         break;
                     }
-                    moves.Add(new ChessMove(Position, testPos));
+                    _moves.Add(new ChessMove(Position, _testPos));
                 }
             }
-            return moves;
+            return _moves;
         }
 
         private List<ChessMove> FindMoves_King(in ChessBoard p_board)
         {
-            List<ChessMove> moves = new List<ChessMove>(m_maxMoves);
-            Coordinate2D testPos, cassMidPos, cassRookPos;
-            ChessPiece? testPos_piece, cassMidPos_piece, cassRookPos_piece;
+            List<ChessMove> _moves = new List<ChessMove>(maxMoves);
+            Coordinate2D _testPos, _cassMidPos, _cassRookPos;
+            ChessPiece? _testPos_piece, _cassMidPos_piece, _cassRookPos_piece;
             // surrounding tiles
-            for (int d = 1; d <= 8; ++d)
+            for (int i_a = 1; i_a <= 8; ++i_a)
             {
-                testPos = d switch
+                _testPos = i_a switch
                 {
                     1 => new Coordinate2D(Position.x + 1, Position.y),
                     2 => new Coordinate2D(Position.x - 1, Position.y),
@@ -233,41 +234,41 @@
                     8 => new Coordinate2D(Position.x - 1, Position.y - 1),
                     _ => throw new System.NotImplementedException(),
                 };
-                if (!testPos.IsValid()) continue;
-                testPos_piece = p_board.GetPieceAt(testPos.GetIndex());
-                if (testPos_piece == null || (testPos_piece != null && testPos_piece.color != color)) moves.Add(new ChessMove(Position, testPos));
+                if (!_testPos.IsValid()) continue;
+                _testPos_piece = p_board.GetPieceAt(_testPos.GetIndex());
+                if (_testPos_piece == null || (_testPos_piece != null && _testPos_piece.color != color)) _moves.Add(new ChessMove(Position, _testPos));
             }
-            // castelling [{ need to include for logic }]
-            for (int d = 1; d <= 2; ++d)
+            // castelling tiles
+            for (int i_c = 1; i_c <= 2; ++i_c)
             {
                 if (MoveCount > 0) break;
-                testPos = d switch
+                _testPos = i_c switch
                 {
                     1 => new Coordinate2D(Position.x + 2, Position.y),
                     2 => new Coordinate2D(Position.x - 2, Position.y),
                     _ => throw new System.NotImplementedException(),
                 };
-                cassMidPos = d switch
+                _cassMidPos = i_c switch
                 {
                     1 => new Coordinate2D(Position.x + 1, Position.y),
                     2 => new Coordinate2D(Position.x - 1, Position.y),
                     _ => throw new System.NotImplementedException(),
                 };
-                cassRookPos = d switch
+                _cassRookPos = i_c switch
                 {
-                    1 => new Coordinate2D(ChessBoard.COLUMNS, Position.y),
+                    1 => new Coordinate2D(ChessBoard.columns, Position.y),
                     2 => new Coordinate2D(1, Position.y),
                     _ => throw new System.NotImplementedException(),
                 };
-                if (!testPos.IsValid() || !cassMidPos.IsValid() || !cassRookPos.IsValid()) continue;
-                testPos_piece = p_board.GetPieceAt(testPos.GetIndex());
-                cassMidPos_piece = p_board.GetPieceAt(cassMidPos.GetIndex());
-                cassRookPos_piece = p_board.GetPieceAt(cassRookPos.GetIndex());
-                if (testPos_piece != null || cassMidPos_piece != null || p_board.IsPositionInCheck(testPos, color) || p_board.IsPositionInCheck(cassMidPos, color)) continue;
-                if (cassRookPos_piece == null || cassRookPos_piece.color != color || cassRookPos_piece.type != ChessPieceType.Rook || cassRookPos_piece.MoveCount > 0) continue;
-                moves.Add(new ChessMove(Position, testPos, cassRookPos, cassMidPos));
+                if (!_testPos.IsValid() || !_cassMidPos.IsValid() || !_cassRookPos.IsValid()) continue;
+                _testPos_piece = p_board.GetPieceAt(_testPos.GetIndex());
+                _cassMidPos_piece = p_board.GetPieceAt(_cassMidPos.GetIndex());
+                _cassRookPos_piece = p_board.GetPieceAt(_cassRookPos.GetIndex());
+                if (_testPos_piece != null || _cassMidPos_piece != null || p_board.IsPositionInCheck(_testPos, color) || p_board.IsPositionInCheck(_cassMidPos, color)) continue;
+                if (_cassRookPos_piece == null || _cassRookPos_piece.color != color || _cassRookPos_piece.type != ChessPieceType.Rook || _cassRookPos_piece.MoveCount > 0) continue;
+                _moves.Add(new ChessMove(Position, _testPos, _cassRookPos, _cassMidPos));
             }
-            return moves;
+            return _moves;
         }
 
     }

@@ -30,9 +30,11 @@
         King,
     }
 
-    public enum ChessMatchEndStatus : byte
+    public enum ChessMatchStatus : byte
     {
-        None,
+        NotConfigured,
+        Paused,
+        Running,
         //Wins
         WhiteCheckmated,
         BlackCheckmated,
@@ -161,7 +163,7 @@
 
     public static class ChessBoardIndexer
     {
-        private const int k_rows = ChessBoard.ROWS, k_columns = ChessBoard.COLUMNS;
+        private const int k_rows = ChessBoard.rows, k_columns = ChessBoard.columns;
 
         public static bool IsValid(this in Coordinate2D p_position) => p_position.initialized
             && p_position.x >= 1 && p_position.x <= k_rows && p_position.y >= 1 && p_position.y <= k_columns;

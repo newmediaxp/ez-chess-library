@@ -4,10 +4,20 @@
 
     public static class ChessNotation
     {
+        public const char
+            capture = 'x',
+            spawn = '=',
+            check = '+',
+            checkmate = '#';
+        public const string
+            kingSideCastelling = "0-0",
+            queenSideCastelling = "0-0-0";
+
+        public const string defaultFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
         public static char GetNotation(in ChessPieceType p_type, in bool p_caps = true)
         {
-            char notation = p_type switch
+            char _notation = p_type switch
             {
                 ChessPieceType.Pawn => 'P',
                 ChessPieceType.Rook => 'R',
@@ -17,7 +27,7 @@
                 ChessPieceType.King => 'K',
                 _ => throw new NotImplementedException(),
             };
-            return p_caps ? notation : char.ToLower(notation);
+            return p_caps ? _notation : char.ToLower(_notation);
         }
 
         public static ChessPieceType GetPieceType(in char p_notation) => char.ToUpper(p_notation) switch
@@ -58,11 +68,11 @@
         public static Coordinate2D? GetPosition(in string p_notation)
         {
             if (string.IsNullOrEmpty(p_notation) || p_notation.Length != 2) return null;
-            int x = p_notation[0] - 96;
-            if (!int.TryParse(p_notation.AsSpan(1, 1), out int y)) return null;
-            Coordinate2D position = new Coordinate2D(x, y);
-            if (!position.IsValid()) return null;
-            return position;
+            int _x = p_notation[0] - 96;
+            if (!int.TryParse(p_notation.AsSpan(1, 1), out int _y)) return null;
+            Coordinate2D _position = new Coordinate2D(_x, _y);
+            if (!_position.IsValid()) return null;
+            return _position;
         }
 
     }
