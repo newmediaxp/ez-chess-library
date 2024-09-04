@@ -10,16 +10,6 @@
         Black,
     }
 
-    public static class ChessPieceColorFunctions
-    {
-        public static ChessPieceColor Inverse(this ChessPieceColor p_color) => p_color switch
-        {
-            ChessPieceColor.White => ChessPieceColor.Black,
-            ChessPieceColor.Black => ChessPieceColor.White,
-            _ => throw new NotImplementedException(),
-        };
-    }
-
     public enum ChessPieceType : byte
     {
         Pawn,
@@ -163,25 +153,39 @@
 
     public static class ChessBoardIndexer
     {
-        private const int k_rows = ChessBoard.rows, k_columns = ChessBoard.columns;
+        private const int rows = ChessBoard.rows, columns = ChessBoard.columns;
+        private const int
+            maxMoves_Pawn = 2 + 2,                  // forward 2, captures 2
+            maxMoves_Rook = rows + columns,         // 4 directions
+            maxMoves_Knight = 4 * 2,                // 2 in each quadrant
+            maxMoves_Bishop = rows + columns,       // 4 directions
+            maxMoves_Queen = 2 * (rows + columns),  // 8 directions
+            maxMoves_King = 8 + 2;                  // 8 directions, 2 castelling
 
         public static bool IsValid(this in Coordinate2D p_position) => p_position.initialized
-            && p_position.x >= 1 && p_position.x <= k_rows && p_position.y >= 1 && p_position.y <= k_columns;
+            && p_position.x >= 1 && p_position.x <= rows && p_position.y >= 1 && p_position.y <= columns;
 
-        public static int GetIndex(this in Coordinate2D p_position) => (p_position.y - 1) * k_columns + (p_position.x - 1);
+        public static int GetIndex(this in Coordinate2D p_position) => (p_position.y - 1) * columns + (p_position.x - 1);
 
-        public static bool IsValid(this in int p_index) => p_index >= 0 && p_index < k_rows * k_columns;
+        public static bool IsValid(this in int p_index) => p_index >= 0 && p_index < rows * columns;
 
-        public static Coordinate2D GetPosition(this in int p_index) => new Coordinate2D((p_index % k_columns) + 1, (p_index / k_columns) + 1);
+        public static Coordinate2D GetPosition(this in int p_index) => new Coordinate2D((p_index % columns) + 1, (p_index / columns) + 1);
+
+        public static ChessPieceColor Inverse(this ChessPieceColor p_color) => p_color switch
+        {
+            ChessPieceColor.White => ChessPieceColor.Black,
+            ChessPieceColor.Black => ChessPieceColor.White,
+            _ => throw new NotImplementedException(),
+        };
 
         public static int GetMaxMoves(this ChessPieceType p_type) => p_type switch
         {
-            ChessPieceType.Pawn => 2 + 2,  // forward 2, captures 2
-            ChessPieceType.Rook => k_rows + k_columns,  // 4 directions
-            ChessPieceType.Knight => 4 * 2,  // 2 in each quadrant
-            ChessPieceType.Bishop => k_rows + k_columns,  // 4 directions
-            ChessPieceType.Queen => 2 * (k_rows + k_columns),  // 8 directions
-            ChessPieceType.King => 8 + 2,  // 8 directions, 2 castelling
+            ChessPieceType.Pawn => maxMoves_Pawn,
+            ChessPieceType.Rook => maxMoves_Rook,
+            ChessPieceType.Knight => maxMoves_Knight,
+            ChessPieceType.Bishop => maxMoves_Bishop,
+            ChessPieceType.Queen => maxMoves_Queen,
+            ChessPieceType.King => maxMoves_King,
             _ => throw new NotImplementedException(),
         };
 

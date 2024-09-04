@@ -1,5 +1,6 @@
 ﻿namespace NMX.EzChess.Library.Core
 {
+    using System;
     using System.Collections.Generic;
 
     public sealed class ChessPiece
@@ -22,7 +23,7 @@
             MoveCount = 0;
             lastMovedPiece = false;
             direction = p_color == ChessPieceColor.White ? 1 : -1;
-            limit = System.Math.Max(ChessBoard.rows, ChessBoard.columns);
+            limit = Math.Max(ChessBoard.rows, ChessBoard.columns);
             maxMoves = p_type.GetMaxMoves();
         }
 

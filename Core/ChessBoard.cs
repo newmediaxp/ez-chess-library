@@ -300,8 +300,6 @@
             ChessPiece _moveNotation_piece = pieces[i_self_from]!;
             bool _moveNotation_isCapture = pieces[i_self_to] != null;
 
-            // perform normal move procedures
-            // for (int i = 0; i < m_pieces.Length; ++i) if (m_pieces[i] != null) m_pieces[i]!.m_lastMovedPiece = i == i_self_from;
             pieces[i_self_from]!.MarkAsLastMovedPiece(this);
             MoveBoardPiece(i_self_from, i_self_to);
 
