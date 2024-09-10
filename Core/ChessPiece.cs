@@ -8,20 +8,19 @@
         public readonly ChessPieceType type;
         public readonly ChessPieceColor color;
         public Coordinate2D Position { get; private set; }
-        public int MoveCount { get; private set; }
-
         private bool lastMovedPiece;
+        private int moveCount;
         private readonly int direction, limit, maxMoves;
 
         private ChessPiece() { }
 
-        public ChessPiece(in ChessPieceType p_type, in ChessPieceColor p_color, in Coordinate2D p_position)
+        internal ChessPiece(in ChessPieceType p_type, in ChessPieceColor p_color, in Coordinate2D p_position)
         {
             type = p_type;
             color = p_color;
             Position = p_position;
-            MoveCount = 0;
             lastMovedPiece = false;
+            moveCount = 0;
             direction = p_color == ChessPieceColor.White ? 1 : -1;
             limit = Math.Max(ChessBoard.rows, ChessBoard.columns);
             maxMoves = p_type.GetMaxMoves();
@@ -29,14 +28,14 @@
 
         internal ChessPiece CreateDeepClone() => new ChessPiece(type, color, Position)
         {
-            MoveCount = MoveCount,
+            moveCount = moveCount,
             lastMovedPiece = lastMovedPiece,
         };
 
         internal void ChangePosition(in Coordinate2D p_position)
         {
             Position = p_position;
-            ++MoveCount;
+            ++moveCount;
         }
 
         internal void MarkAsLastMovedPiece(in ChessBoard p_board)
@@ -49,7 +48,7 @@
             }
         }
 
-        public List<ChessMove> FindMoves(in ChessBoard p_board) => type switch
+        internal List<ChessMove> FindMoves(in ChessBoard p_board) => type switch
         {
             ChessPieceType.Pawn => FindMoves_Pawn(p_board),
             ChessPieceType.Rook => FindMoves_Rook(p_board),
@@ -57,7 +56,7 @@
             ChessPieceType.Bishop => FindMoves_Bishop(p_board),
             ChessPieceType.Queen => FindMoves_Queen(p_board),
             ChessPieceType.King => FindMoves_King(p_board),
-            _ => throw new System.NotImplementedException(),
+            _ => throw new NotImplementedException(),
         };
 
         private List<ChessMove> FindMoves_Pawn(in ChessBoard p_board)
@@ -71,7 +70,7 @@
                 _testPos = new Coordinate2D(Position.x, Position.y + direction * i_f);
                 if (!_testPos.IsValid()) break;
                 _testPos_piece = p_board.GetPieceAt(_testPos.GetIndex());
-                if (_testPos_piece != null || (i_f > 1 && MoveCount > 0)) break;
+                if (_testPos_piece != null || (i_f > 1 && moveCount > 0)) break;
                 if ((color == ChessPieceColor.White && _testPos.y == ChessBoard.rows) || (color == ChessPieceColor.Black && _testPos.y == 1))
                     _moves.Add(new ChessMove(Position, _testPos, ChessPieceType.Queen)); //PawnPromotion
                 else _moves.Add(new ChessMove(Position, _testPos));
@@ -86,7 +85,7 @@
                 if (_testPos_piece != null && _testPos_piece.color != color) _moves.Add(new ChessMove(Position, _testPos));
                 if (!_enPassPos.IsValid()) continue;
                 _enPassPos_piece = p_board.GetPieceAt(_enPassPos.GetIndex());
-                if (_testPos_piece == null && _enPassPos_piece != null && _enPassPos_piece.color != color && _enPassPos_piece.type == ChessPieceType.Pawn && _enPassPos_piece.lastMovedPiece && _enPassPos_piece.MoveCount == 1) _moves.Add(new ChessMove(Position, _testPos, _enPassPos)); //EnPassant
+                if (_testPos_piece == null && _enPassPos_piece != null && _enPassPos_piece.color != color && _enPassPos_piece.type == ChessPieceType.Pawn && _enPassPos_piece.lastMovedPiece && _enPassPos_piece.moveCount == 1) _moves.Add(new ChessMove(Position, _testPos, _enPassPos)); //EnPassant
             }
             return _moves;
         }
@@ -107,7 +106,7 @@
                         2 => new Coordinate2D(Position.x - i_f, Position.y),
                         3 => new Coordinate2D(Position.x, Position.y + i_f),
                         4 => new Coordinate2D(Position.x, Position.y - i_f),
-                        _ => throw new System.NotImplementedException(),
+                        _ => throw new NotImplementedException(),
                     };
                     if (!_testPos.IsValid()) break;
                     _testPos_piece = p_board.GetPieceAt(_testPos.GetIndex());
@@ -140,7 +139,7 @@
                     6 => new Coordinate2D(Position.x + 2, Position.y - 1),
                     7 => new Coordinate2D(Position.x - 2, Position.y + 1),
                     8 => new Coordinate2D(Position.x - 2, Position.y - 1),
-                    _ => throw new System.NotImplementedException(),
+                    _ => throw new NotImplementedException(),
                 };
                 if (!_testPos.IsValid()) continue;
                 _testPos_piece = p_board.GetPieceAt(_testPos.GetIndex());
@@ -200,7 +199,7 @@
                         6 => new Coordinate2D(Position.x - i_f, Position.y + i_f),
                         7 => new Coordinate2D(Position.x + i_f, Position.y - i_f),
                         8 => new Coordinate2D(Position.x - i_f, Position.y - i_f),
-                        _ => throw new System.NotImplementedException(),
+                        _ => throw new NotImplementedException(),
                     };
                     if (!_testPos.IsValid()) break;
                     _testPos_piece = p_board.GetPieceAt(_testPos.GetIndex());
@@ -233,7 +232,7 @@
                     6 => new Coordinate2D(Position.x - 1, Position.y + 1),
                     7 => new Coordinate2D(Position.x + 1, Position.y - 1),
                     8 => new Coordinate2D(Position.x - 1, Position.y - 1),
-                    _ => throw new System.NotImplementedException(),
+                    _ => throw new NotImplementedException(),
                 };
                 if (!_testPos.IsValid()) continue;
                 _testPos_piece = p_board.GetPieceAt(_testPos.GetIndex());
@@ -242,7 +241,7 @@
             // castelling tiles
             for (int i_c = 1; i_c <= 2; ++i_c)
             {
-                if (MoveCount > 0) break;
+                if (moveCount > 0) break;
                 _testPos = i_c switch
                 {
                     1 => new Coordinate2D(Position.x + 2, Position.y),
@@ -253,20 +252,20 @@
                 {
                     1 => new Coordinate2D(Position.x + 1, Position.y),
                     2 => new Coordinate2D(Position.x - 1, Position.y),
-                    _ => throw new System.NotImplementedException(),
+                    _ => throw new NotImplementedException(),
                 };
                 _cassRookPos = i_c switch
                 {
                     1 => new Coordinate2D(ChessBoard.columns, Position.y),
                     2 => new Coordinate2D(1, Position.y),
-                    _ => throw new System.NotImplementedException(),
+                    _ => throw new NotImplementedException(),
                 };
                 if (!_testPos.IsValid() || !_cassMidPos.IsValid() || !_cassRookPos.IsValid()) continue;
                 _testPos_piece = p_board.GetPieceAt(_testPos.GetIndex());
                 _cassMidPos_piece = p_board.GetPieceAt(_cassMidPos.GetIndex());
                 _cassRookPos_piece = p_board.GetPieceAt(_cassRookPos.GetIndex());
                 if (_testPos_piece != null || _cassMidPos_piece != null || p_board.IsPositionInCheck(_testPos, color) || p_board.IsPositionInCheck(_cassMidPos, color)) continue;
-                if (_cassRookPos_piece == null || _cassRookPos_piece.color != color || _cassRookPos_piece.type != ChessPieceType.Rook || _cassRookPos_piece.MoveCount > 0) continue;
+                if (_cassRookPos_piece == null || _cassRookPos_piece.color != color || _cassRookPos_piece.type != ChessPieceType.Rook || _cassRookPos_piece.moveCount > 0) continue;
                 _moves.Add(new ChessMove(Position, _testPos, _cassRookPos, _cassMidPos));
             }
             return _moves;

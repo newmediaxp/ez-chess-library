@@ -52,7 +52,7 @@
             initialized = true;
         }
 
-        public bool EquivalentTo(in Coordinate2D p_position) => x == p_position.x && y == p_position.y;
+        public readonly bool EquivalentTo(in Coordinate2D p_position) => x == p_position.x && y == p_position.y;
     }
 
     public enum ChessMoveType : byte
@@ -113,12 +113,12 @@
         /// <summary>
         /// Check equivalance on the basis of <c>self_from</c>
         /// </summary>
-        public bool EquivalentTo_SelfFrom(in ChessMove p_move) => self_from.EquivalentTo(p_move.self_from);
+        public readonly bool EquivalentTo_SelfFrom(in ChessMove p_move) => self_from.EquivalentTo(p_move.self_from);
 
         /// <summary>
         /// Check equivalance on the basis of <c>self_to</c>
         /// </summary>
-        public bool Equivalent_To(in ChessMove p_move) => self_to.EquivalentTo(p_move.self_to);
+        public readonly bool Equivalent_To(in ChessMove p_move) => self_to.EquivalentTo(p_move.self_to);
     }
 
     public static class CustomCollectionFunctions
@@ -153,8 +153,7 @@
 
     public static class ChessBoardIndexer
     {
-        private const int rows = ChessBoard.rows, columns = ChessBoard.columns;
-        private const int
+        private const int rows = ChessBoard.rows, columns = ChessBoard.columns,
             maxMoves_Pawn = 2 + 2,                  // forward 2, captures 2
             maxMoves_Rook = rows + columns,         // 4 directions
             maxMoves_Knight = 4 * 2,                // 2 in each quadrant

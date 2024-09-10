@@ -15,22 +15,23 @@
             msg_boardNotConfigured = "board not configured",
             msg_boardNotPlayable = "board not playable",
             msg_positionInvalid = "position invalid",
+            msg_turnInvalid = "turn is invalid",
             msg_moveInvalid = "move invalid",
             msg_moveNotApplicable = "move not applicable",
             msg_invalidFEN = "invalid FEN";
         public ChessMatchStatus MatchStatus { get; private set; }
-        public int TurnCount { get; private set; }
-        public int PieceCount { get; private set; }
-        public int LastMovedPieceIndex { get; private set; }
         public ChessPieceColor CurrentColor { get; private set; }
         public Coordinate2D? WhiteCheckedPosition { get; private set; }
         public Coordinate2D? BlackCheckedPosition { get; private set; }
-        public string FEN { get => GetFEN(); set => SetFEN(value); }
+        public int TurnCount { get; private set; }
+        public int PieceCount { get; private set; }
+        public int LastMovedPieceIndex { get; private set; }
         public bool GenerateMoveNotation { get; set; }
         public string LastMoveNotation { get => moveNotation.ToString(); }
+        public string FEN => GetFEN();
 
 
-        public ChessBoard()
+        internal ChessBoard()
         {
             pieces = new ChessPiece[maxPiecesCount];
             maxMoves = 2 * 8 * ChessPieceType.Pawn.GetMaxMoves()
@@ -41,27 +42,27 @@
                 + 2 * ChessPieceType.King.GetMaxMoves();
             whiteMoves = new List<ChessMove>(maxMoves);
             blackMoves = new List<ChessMove>(maxMoves);
-            GenerateMoveNotation = true;
+            GenerateMoveNotation = false;
             moveNotation = new StringBuilder();
         }
 
-        public void ConfigureBoard(in string? p_fen = null)
+        internal void Configure(in string? p_fen = null)
         {
             MatchStatus = ChessMatchStatus.NotConfigured;
-            TurnCount = 0;
-            PieceCount = 0;
-            LastMovedPieceIndex = -1;
             CurrentColor = ChessPieceColor.White;
             WhiteCheckedPosition = null;
             BlackCheckedPosition = null;
+            TurnCount = 0;
+            PieceCount = 0;
+            LastMovedPieceIndex = -1;
             whiteMoves.Clear();
             blackMoves.Clear();
-            FEN = !string.IsNullOrEmpty(p_fen) ? p_fen : ChessNotation.defaultFEN;
+            SetFEN(!string.IsNullOrEmpty(p_fen) ? p_fen : ChessNotation.defaultFEN);
             CountPieces();
             MatchStatus = ChessMatchStatus.Paused;
         }
 
-        public ChessBoard CreateDeepClone()
+        internal ChessBoard CreateDeepClone()
         {
             if (MatchStatus == ChessMatchStatus.NotConfigured) throw new InvalidOperationException(msg_boardNotConfigured);
             ChessBoard _board = new ChessBoard()
@@ -86,16 +87,6 @@
             ChessPieceColor.Black => blackMoves,
             _ => throw new NotImplementedException(),
         };
-
-        public List<ChessMove>? GetMovesAt(in ChessPieceColor p_color, in Coordinate2D p_position)
-        {
-            if (MatchStatus == ChessMatchStatus.NotConfigured) throw new InvalidOperationException(msg_boardNotConfigured);
-            if (!p_position.IsValid() || pieces[p_position.GetIndex()]?.color != CurrentColor) return null;
-            List<ChessMove> _moves = new List<ChessMove>(pieces[p_position.GetIndex()]!.type.GetMaxMoves());
-            foreach (ChessMove _move in GetMovesRef(p_color))
-                if (_move.self_from.EquivalentTo(p_position)) _moves.Add(_move);
-            return _moves;
-        }
 
         private string GetFEN()
         {
@@ -153,8 +144,6 @@
             if (++i_fen >= p_fen.Length) return;
             // set current color
             CurrentColor = ChessNotation.GetColorDirect(p_fen[i_fen]);
-            //FindIfPlayerInCheck(CurrentColor.Inverse());
-            //FindIfPlayerInCheck(CurrentColor);
         }
 
         private void CountPieces()
@@ -171,7 +160,7 @@
             return null;
         }
 
-        public bool IsPositionInCheck(in Coordinate2D p_position, in ChessPieceColor p_color)
+        internal bool IsPositionInCheck(in Coordinate2D p_position, in ChessPieceColor p_color)
         {
             if (MatchStatus == ChessMatchStatus.NotConfigured) throw new InvalidOperationException(msg_boardNotConfigured);
             if (!p_position.IsValid()) throw new InvalidOperationException(msg_positionInvalid);
@@ -179,7 +168,7 @@
             return false;
         }
 
-        private void FindIfPlayerInCheck(in ChessPieceColor p_color)
+        private void FindIfColorInCheck(in ChessPieceColor p_color)
         {
             Coordinate2D? _kingPosition = GetPositionOfKing(p_color) ?? throw new InvalidOperationException($"{p_color} king not found");
             bool inCheck = IsPositionInCheck(_kingPosition.Value, p_color);
@@ -237,55 +226,7 @@
             return true;
         }
 
-        public ChessMove? GetChessMoveFromMoveNotation(in string p_moveNotation)
-        {
-            if (string.IsNullOrEmpty(p_moveNotation) || p_moveNotation.Length < 2) return null;
-            List<ChessMove> _moves = GetMovesRef(CurrentColor);
-            try
-            {
-                if (p_moveNotation == ChessNotation.kingSideCastelling) 
-                    return _moves.Find(move => move.other_from.HasValue && move.other_to.HasValue && move.self_from.x < move.self_to.x);
-                if (p_moveNotation == ChessNotation.queenSideCastelling) 
-                    return _moves.Find(move => move.other_from.HasValue && move.other_to.HasValue && move.self_from.x > move.self_to.x);
-                ChessPieceType _type = ChessNotation.GetPieceType(p_moveNotation[0]);
-                int i_from, i_to, i_row = -1, i_column = -1, i_x = p_moveNotation.IndexOf(ChessNotation.capture);
-                for (i_to = p_moveNotation.Length - 1; i_to >= 0 && i_to > i_x; --i_to)
-                {
-                    if (p_moveNotation[i_to] == ChessNotation.spawn || p_moveNotation[i_to] == ChessNotation.check 
-                        || p_moveNotation[i_to] == ChessNotation.checkmate) continue;
-                    if (i_row == -1 && char.IsDigit(p_moveNotation[i_to]))
-                    { i_row = int.Parse(p_moveNotation.AsSpan(i_to, 1)); continue; }
-                    if (i_column == -1 && char.IsLetter(p_moveNotation[i_to]) && char.IsLower(p_moveNotation[i_to]))
-                    { i_column = p_moveNotation[i_to] - 96; continue; }
-                    if (i_row != -1 && i_column != -1) break;
-                }
-                Coordinate2D _self_to = new Coordinate2D(i_column, i_row);
-                if (!_self_to.IsValid()) return null;
-                i_row = -1; i_column = -1;
-                for (i_from = 0; i_from < p_moveNotation.Length && i_from <= i_to; ++i_from)
-                {
-                    if (i_from == 0 && _type != ChessPieceType.Pawn) continue;
-                    if (i_x != -1 && i_from >= i_x) break;
-                    if (i_row == -1 && char.IsDigit(p_moveNotation[i_from]))
-                    { i_row = int.Parse(p_moveNotation.AsSpan(i_from, 1)); continue; }
-                    if (i_column == -1 && char.IsLetter(p_moveNotation[i_from]) && char.IsLower(p_moveNotation[i_from]))
-                    { i_column = p_moveNotation[i_from] - 96; continue; }
-                }
-                if (i_column == -1 && i_row == -1)
-                    return _moves.Find(move => move.self_to.EquivalentTo(_self_to) && pieces[move.self_from.GetIndex()]!.type == _type);
-                if (i_column == -1)
-                    return _moves.Find(move => move.self_to.EquivalentTo(_self_to) && pieces[move.self_from.GetIndex()]!.type == _type
-                    && move.self_from.y == i_row);
-                if (i_row == -1)
-                    return _moves.Find(move => move.self_to.EquivalentTo(_self_to) && pieces[move.self_from.GetIndex()]!.type == _type
-                    && move.self_from.x == i_column);
-                return _moves.Find(move => move.self_to.EquivalentTo(_self_to) && pieces[move.self_from.GetIndex()]!.type == _type
-                    && move.self_from.x == i_column && move.self_from.y == i_row);
-            }
-            catch { return null; }
-        }
-
-        public (bool p_error, string p_message) ApplyMove(in ChessMove p_move)
+        internal (bool p_error, string p_message) ApplyMove(in ChessMove p_move)
         {
             if (MatchStatus == ChessMatchStatus.NotConfigured) throw new InvalidOperationException(msg_boardNotConfigured);
             if (MatchStatus != ChessMatchStatus.Running) throw new InvalidOperationException(msg_boardNotPlayable);
@@ -331,7 +272,7 @@
             if (GenerateMoveNotation)
             {
                 moveNotation.Clear();
-                if (p_move.other_from.HasValue && p_move.other_to.HasValue) moveNotation.Append(p_move.self_from.x < p_move.self_to.x 
+                if (p_move.other_from.HasValue && p_move.other_to.HasValue) moveNotation.Append(p_move.self_from.x < p_move.self_to.x
                     ? ChessNotation.kingSideCastelling : ChessNotation.queenSideCastelling);
                 else
                 {
@@ -356,6 +297,7 @@
                 }
             }
 
+            LastMovedPieceIndex = i_self_to;
             return (false, string.Empty);
         }
 
@@ -376,15 +318,14 @@
             {
                 ChessBoard _testBoard = CreateDeepClone();
                 _testBoard.MatchStatus = ChessMatchStatus.Running;
-                _testBoard.GenerateMoveNotation = false;
                 (bool error, _) = _testBoard.ApplyMove(_move);
                 if (error) throw new InvalidOperationException(msg_moveNotApplicable);
                 _testBoard.FindPossibleMoves(p_color.Inverse());
-                _testBoard.FindIfPlayerInCheck(p_color);
+                _testBoard.FindIfColorInCheck(p_color);
                 if (_testBoard.IsColorInCheck(p_color)) _movesToRemove.Add(_move);
             }
             foreach (ChessMove _move in _movesToRemove) _moves.Remove(_move);
-            FindIfPlayerInCheck(p_color.Inverse());
+            FindIfColorInCheck(p_color.Inverse());
         }
 
         private void CheckIfGameOver()
@@ -409,21 +350,24 @@
             }
         }
 
-        public void StartTurn()
+        internal void StartTurn()
         {
             if (MatchStatus == ChessMatchStatus.NotConfigured) throw new InvalidOperationException(msg_boardNotConfigured);
+            if (MatchStatus != ChessMatchStatus.Paused) throw new InvalidOperationException(msg_turnInvalid);
             if (TurnCount == 0)
             {
+                CountPieces();
                 IdentifyValidMoves(CurrentColor.Inverse());
                 IdentifyValidMoves(CurrentColor);
                 CheckIfGameOver();
             }
-            if (MatchStatus == ChessMatchStatus.Paused) MatchStatus = ChessMatchStatus.Running;
+            MatchStatus = ChessMatchStatus.Running;
         }
 
-        public void FinishTurn()
+        internal void FinishTurn()
         {
             if (MatchStatus == ChessMatchStatus.NotConfigured) throw new InvalidOperationException(msg_boardNotConfigured);
+            if (MatchStatus != ChessMatchStatus.Running) throw new InvalidOperationException(msg_turnInvalid);
             MatchStatus = ChessMatchStatus.Paused;
             ++TurnCount;
             CountPieces();
@@ -431,6 +375,18 @@
             IdentifyValidMoves(CurrentColor.Inverse());
             CurrentColor = CurrentColor.Inverse();
             CheckIfGameOver();
+        }
+
+        internal void TimeoutTurn()
+        {
+            if (MatchStatus == ChessMatchStatus.NotConfigured) throw new InvalidOperationException(msg_boardNotConfigured);
+            if (MatchStatus != ChessMatchStatus.Running) throw new InvalidOperationException(msg_turnInvalid);
+            MatchStatus = CurrentColor switch
+            {
+                ChessPieceColor.White => ChessMatchStatus.WhiteTimedout,
+                ChessPieceColor.Black => ChessMatchStatus.BlackTimedout,
+                _ => throw new NotImplementedException(),
+            };
         }
 
     }
