@@ -185,7 +185,7 @@
             }
         }
 
-        public bool IsColorInCheck(in ChessPieceColor p_color)
+        internal bool IsColorInCheck(in ChessPieceColor p_color)
         {
             if (MatchStatus == ChessMatchStatus.NotConfigured) throw new InvalidOperationException(msg_boardNotConfigured);
             return p_color switch

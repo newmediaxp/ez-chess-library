@@ -8,9 +8,10 @@
         public readonly ChessPieceType type;
         public readonly ChessPieceColor color;
         public Coordinate2D Position { get; private set; }
-        private bool lastMovedPiece;
+        public bool LastMoved { get; private set; }
         private int moveCount;
         private readonly int direction, limit, maxMoves;
+
 
         private ChessPiece() { }
 
@@ -19,7 +20,7 @@
             type = p_type;
             color = p_color;
             Position = p_position;
-            lastMovedPiece = false;
+            LastMoved = false;
             moveCount = 0;
             direction = p_color == ChessPieceColor.White ? 1 : -1;
             limit = Math.Max(ChessBoard.rows, ChessBoard.columns);
@@ -29,7 +30,7 @@
         internal ChessPiece CreateDeepClone() => new ChessPiece(type, color, Position)
         {
             moveCount = moveCount,
-            lastMovedPiece = lastMovedPiece,
+            LastMoved = LastMoved,
         };
 
         internal void ChangePosition(in Coordinate2D p_position)
@@ -44,7 +45,7 @@
             for (int i = 0; i < ChessBoard.maxPiecesCount; ++i)
             {
                 _piece = p_board.GetPieceAt(i);
-                if (_piece != null) _piece.lastMovedPiece = _piece == this;
+                if (_piece != null) _piece.LastMoved = _piece == this;
             }
         }
 
@@ -85,7 +86,7 @@
                 if (_testPos_piece != null && _testPos_piece.color != color) _moves.Add(new ChessMove(Position, _testPos));
                 if (!_enPassPos.IsValid()) continue;
                 _enPassPos_piece = p_board.GetPieceAt(_enPassPos.GetIndex());
-                if (_testPos_piece == null && _enPassPos_piece != null && _enPassPos_piece.color != color && _enPassPos_piece.type == ChessPieceType.Pawn && _enPassPos_piece.lastMovedPiece && _enPassPos_piece.moveCount == 1) _moves.Add(new ChessMove(Position, _testPos, _enPassPos)); //EnPassant
+                if (_testPos_piece == null && _enPassPos_piece != null && _enPassPos_piece.color != color && _enPassPos_piece.type == ChessPieceType.Pawn && _enPassPos_piece.LastMoved && _enPassPos_piece.moveCount == 1) _moves.Add(new ChessMove(Position, _testPos, _enPassPos)); //EnPassant
             }
             return _moves;
         }

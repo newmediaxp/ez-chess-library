@@ -1,22 +1,22 @@
 ﻿namespace NMX.EzChess.Library.Match
 {
     using Core;
+    using NMX.EzChess.Library.Bot;
     using System;
     using System.Collections.Generic;
-    using System.Diagnostics;
     using System.Threading;
     using System.Threading.Tasks;
 
     public sealed class ChessMatch
     {
-        private ChessBoardState boardState;
-        private readonly Stack<ChessBoardState> playedBoardStates, undoBoardStates;
-        private readonly Stopwatch turnSwc;
-        private readonly CancellationTokenSource playTimersCts;
+        private ChessMatchState boardState;
+        private readonly Stack<ChessMatchState> playedBoardStates, undoBoardStates;
+        private readonly CancellationTokenSource bgTasksCts;
         private const int clockRate = 10;
+        public event Action? OnBoardUpdated, OnBotMoved, OnTimerUpdated;
+        public bool whiteIsBot, blackIsBot;
         private const string
-            msg_boardNotConfigured = "board not configured",
-            msg_boardNotPlayable = "board not playable";
+            msg_boardNotConfigured = "board not configured";
         public ChessBoard Board => boardState.board;
         public PlayTimer WhiteTimer => boardState.whiteTimer;
         public PlayTimer BlackTimer => boardState.blackTimer;
@@ -26,26 +26,34 @@
             ChessPieceColor.Black => BlackTimer,
             _ => throw new NotImplementedException(),
         };
+        public bool IsBotMove => Board.CurrentColor switch
+        {
+            ChessPieceColor.White => whiteIsBot,
+            ChessPieceColor.Black => blackIsBot,
+            _ => throw new NotImplementedException(),
+        };
         public bool CanUndo => playedBoardStates.Count > 0;
         public bool CanRedo => undoBoardStates.Count > 0;
 
+
         public ChessMatch()
         {
-            boardState = new ChessBoardState(new ChessBoard(), new PlayTimer(), new PlayTimer());
-            playedBoardStates = new Stack<ChessBoardState>();
-            undoBoardStates = new Stack<ChessBoardState>();
-            turnSwc = new Stopwatch();
-            playTimersCts = new CancellationTokenSource();
-            CheckPlayTimers(playTimersCts.Token);
+            boardState = new ChessMatchState(new ChessBoard(), new PlayTimer(), new PlayTimer());
+            playedBoardStates = new Stack<ChessMatchState>();
+            undoBoardStates = new Stack<ChessMatchState>();
+            bgTasksCts = new CancellationTokenSource();
+            OnBoardUpdated += OnTimerUpdated;
+            CheckPlayTimers(bgTasksCts.Token);
+            HandleBotMoves(bgTasksCts.Token);
         }
 
         ~ChessMatch()
         {
-            turnSwc.Stop();
-            playTimersCts.Cancel();
+            OnBoardUpdated -= OnTimerUpdated;
+            bgTasksCts.Cancel();
         }
 
-        public void Configure(in string p_fen, in int p_totalTimeLimit, in int p_moveTimeLimit)
+        public void Configure(in string? p_fen, in int p_totalTimeLimit, in int p_moveTimeLimit)
         {
             playedBoardStates.Clear();
             undoBoardStates.Clear();
@@ -54,23 +62,23 @@
             BlackTimer.Set(p_totalTimeLimit, p_moveTimeLimit);
         }
 
-        public List<ChessMove>? GetMoves(in ChessPieceColor p_color, in Coordinate2D p_position)
+        public List<ChessMove>? GetMoves(in Coordinate2D p_position)
         {
             if (Board.MatchStatus == ChessMatchStatus.NotConfigured) throw new InvalidOperationException(msg_boardNotConfigured);
             if (!p_position.IsValid()) return null;
             ChessPiece? _piece = Board.GetPieceAt(p_position.GetIndex());
-            if (_piece?.color != p_color) return null;
+            if (_piece?.color != Board.CurrentColor) return null;
             List<ChessMove> _moves = new List<ChessMove>(_piece!.type.GetMaxMoves());
-            foreach (ChessMove _move in Board.GetMovesRef(p_color))
+            foreach (ChessMove _move in Board.GetMovesRef(Board.CurrentColor))
                 if (_move.self_from.EquivalentTo(p_position)) _moves.Add(_move);
             return _moves;
         }
 
-        public ChessMove? GetMoveFromNotation(in ChessPieceColor p_color, in string p_moveNotation)
+        public ChessMove? GetMoveFromNotation(in string p_moveNotation)
         {
             if (Board.MatchStatus == ChessMatchStatus.NotConfigured) throw new InvalidOperationException(msg_boardNotConfigured);
             if (string.IsNullOrEmpty(p_moveNotation) || p_moveNotation.Length < 2) return null;
-            List<ChessMove> _moves = Board.GetMovesRef(p_color);
+            List<ChessMove> _moves = Board.GetMovesRef(Board.CurrentColor);
             try
             {
                 if (p_moveNotation == ChessNotation.kingSideCastelling)
@@ -115,42 +123,88 @@
             catch { return null; }
         }
 
+        public ChessMove? GetRandomMove() => ChessBot.GetRandomMove(Board, Board.CurrentColor);
+
+        public ChessMove? GetBestMove(in int p_depth) => ChessBot.GetBestMove(Board, Board.CurrentColor, p_depth);
+
+        public string AnalyzeBestMove(in int p_depth) => ChessBot.AnalyzeBestMove(Board, Board.CurrentColor, p_depth);
+
+        public bool IsPlayerInCheck() => Board.IsColorInCheck(Board.CurrentColor);
+
         public (bool p_error, string p_message) ApplyMove(in ChessMove p_move) => Board.ApplyMove(p_move);
 
-        private async void CheckPlayTimers(CancellationToken p_token = default)
+        private async void HandleBotMoves(CancellationToken p_token)
+        {
+            while (!p_token.IsCancellationRequested)
+            {
+                if (Board.MatchStatus == ChessMatchStatus.Paused && IsBotMove) StartTurn();
+                await Task.Yield();
+                if (Board.MatchStatus == ChessMatchStatus.Running && IsBotMove)
+                {
+                    ChessMove? _move = GetRandomMove();
+                    //ChessMove? _move = GetBestMove(4);
+                    if (!_move.HasValue) throw new InvalidOperationException("bot has no move");
+                    await Task.Yield();
+                    if (Board.MatchStatus != ChessMatchStatus.Running) continue;
+                    (bool error, string message) = ApplyMove(_move.Value);
+                    if (error) throw new InvalidOperationException($"error while applying bot move : {message}");
+                    await Task.Yield();
+                    if (Board.MatchStatus != ChessMatchStatus.Running) continue;
+                    FinishTurn();
+                    OnBotMoved?.Invoke(); 
+                }
+                await Task.Yield();
+            }
+        }
+
+        private async void CheckPlayTimers(CancellationToken p_token)
         {
             while (!p_token.IsCancellationRequested)
             {
                 await Task.Delay(clockRate, p_token);
                 if (p_token.IsCancellationRequested) return;
-                if (Board.MatchStatus == ChessMatchStatus.Running && CurrentPlayTimer.DecrementTimers(clockRate)) Board.TimeoutTurn();
+                if (Board.MatchStatus == ChessMatchStatus.Running)
+                { 
+                    if (CurrentPlayTimer.DecrementTimers(clockRate)) TimeoutTurn();
+                    OnTimerUpdated?.Invoke();
+                }
             }
         }
 
         public void StartTurn()
         {
             CurrentPlayTimer.ResetMoveTimer();
+            playedBoardStates.Push(boardState.CreateDeepClone());
             Board.StartTurn();
+            OnBoardUpdated?.Invoke();
         }
 
         public void FinishTurn()
         {
             Board.FinishTurn();
-            CurrentPlayTimer.ResetMoveTimer();
+            OnBoardUpdated?.Invoke();
+        }
+
+        public void TimeoutTurn()
+        {
+            Board.TimeoutTurn();
+            OnBoardUpdated?.Invoke();
         }
 
         public void Undo()
         {
             if (!CanUndo) return;
-            undoBoardStates.Push(boardState);
+            undoBoardStates.Push(boardState.CreateDeepClone());
             boardState = playedBoardStates.Pop();
+            OnBoardUpdated?.Invoke();
         }
 
         public void Redo()
         {
             if (!CanRedo) return;
-            playedBoardStates.Push(boardState);
+            playedBoardStates.Push(boardState.CreateDeepClone());
             boardState = undoBoardStates.Pop();
+            OnBoardUpdated?.Invoke();
         }
 
     }

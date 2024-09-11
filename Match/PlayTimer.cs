@@ -4,8 +4,8 @@
     {
         public int TotalTimeLimit { get; private set; }
         public int MoveTimeLimit { get; private set; }
-        public bool HasTotalTimer => TotalTimer > 0;
-        public bool HasMoveTimer => MoveTimer > 0;
+        public bool HasTotalTimeLimit => TotalTimeLimit > 0;
+        public bool HasMoveTimeLimit => MoveTimeLimit > 0;
         public int TotalTimer { get; private set; }
         public int MoveTimer { get; private set; }
 
@@ -26,12 +26,12 @@
         internal bool DecrementTimers(in int p_deduction)
         {
             bool _timeout = false;
-            if (HasTotalTimer)
+            if (HasTotalTimeLimit)
             {
                 TotalTimer -= p_deduction;
                 if (TotalTimer <= 0) _timeout = true;
             }
-            if (HasMoveTimer)
+            if (HasMoveTimeLimit)
             {
                 MoveTimer -= p_deduction;
                 if (MoveTimer <= 0) _timeout = true;
@@ -41,7 +41,7 @@
 
         internal void ResetMoveTimer()
         {
-            MoveTimer = TotalTimer < MoveTimeLimit ? TotalTimer : MoveTimeLimit;
+            if (HasMoveTimeLimit) MoveTimer = TotalTimer < MoveTimeLimit ? TotalTimer : MoveTimeLimit;
         }
     }
 }
