@@ -12,9 +12,8 @@
         private ChessMatchState boardState;
         private readonly Stack<ChessMatchState> playedBoardStates, undoBoardStates;
         private readonly CancellationTokenSource bgTasksCts;
-        private const int clockRate = 10, minBotDelay = 100;
+        public ChessMatchConfig config;
         public event Action? OnBoardUpdated, OnBotMoved, OnTimerUpdated;
-        public bool whiteIsBot, blackIsBot;
         private const string
             msg_boardNotConfigured = "board not configured";
         public ChessBoard Board => boardState.board;
@@ -28,8 +27,8 @@
         };
         public bool IsBotMove => Board.CurrentColor switch
         {
-            ChessPieceColor.White => whiteIsBot,
-            ChessPieceColor.Black => blackIsBot,
+            ChessPieceColor.White => config.whiteIsBot,
+            ChessPieceColor.Black => config.blackIsBot,
             _ => throw new NotImplementedException(),
         };
         public bool CanUndo => playedBoardStates.Count > 0;
@@ -42,6 +41,8 @@
             playedBoardStates = new Stack<ChessMatchState>();
             undoBoardStates = new Stack<ChessMatchState>();
             bgTasksCts = new CancellationTokenSource();
+            config.clockRate = 10;
+            config.minBotDelay = 100;
             CheckPlayTimers(bgTasksCts.Token);
             HandleBotMoves(bgTasksCts.Token);
         }
@@ -51,14 +52,14 @@
             bgTasksCts.Cancel();
         }
 
-        public void Configure(in string? p_fen, in int p_totalTimeLimit, in int p_moveTimeLimit)
+        public void Configure(in string? p_fen)
         {
             playedBoardStates.Clear();
             undoBoardStates.Clear();
             Board.Configure(p_fen);
             OnBoardUpdated?.Invoke();
-            WhiteTimer.Set(p_totalTimeLimit, p_moveTimeLimit);
-            BlackTimer.Set(p_totalTimeLimit, p_moveTimeLimit);
+            WhiteTimer.Set(config.totalTimeLimit, config.moveTimeLimit);
+            BlackTimer.Set(config.totalTimeLimit, config.moveTimeLimit);
             OnTimerUpdated?.Invoke();
         }
 
@@ -141,11 +142,12 @@
                 await Task.Yield();
                 if (Board.MatchStatus == ChessMatchStatus.Running && IsBotMove)
                 {
+                    await Task.Delay(config.minBotDelay, p_token);
                     ChessMove? _move = GetRandomMove();
                     //ChessMove? _move = GetBestMove(4);
-                    if (!_move.HasValue) throw new InvalidOperationException("bot has no move");
-                    await Task.Delay(minBotDelay, p_token);
+                    await Task.Yield();
                     if (Board.MatchStatus != ChessMatchStatus.Running) continue;
+                    if (!_move.HasValue) throw new InvalidOperationException("bot has no move");
                     (bool error, string message) = ApplyMove(_move.Value);
                     if (error) throw new InvalidOperationException($"error while applying bot move : {message}");
                     await Task.Yield();
@@ -161,11 +163,11 @@
         {
             while (!p_token.IsCancellationRequested)
             {
-                await Task.Delay(clockRate, p_token);
+                await Task.Delay(config.clockRate, p_token);
                 if (p_token.IsCancellationRequested) return;
                 if (Board.MatchStatus == ChessMatchStatus.Running)
                 { 
-                    if (CurrentPlayTimer.DecrementTimers(clockRate)) TimeoutTurn();
+                    if (CurrentPlayTimer.DecrementTimer(config.clockRate)) TimeoutTurn();
                     OnTimerUpdated?.Invoke();
                 }
             }

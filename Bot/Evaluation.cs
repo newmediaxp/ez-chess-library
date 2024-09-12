@@ -177,6 +177,7 @@
                 _testBoard = p_board.CreateDeepClone();
                 _testBoard.ApplyMove(_move);
                 _testBoard.FinishTurn();
+                if (_testBoard.MatchStatus != ChessMatchStatus.Paused) return (GetBoardValue(p_board, p_maxSide), null, 1);
                 _testBoard.StartTurn();
                 (_testValue, _, _testNodeCount) = Search_MinMax(_testBoard, p_maxSide, p_depth - 1, p_alpha, p_beta);
                 _totalNodeCount += _testNodeCount;

@@ -23,7 +23,7 @@
             MoveTimer = MoveTimeLimit = p_moveTimeLimit;
         }
 
-        internal bool DecrementTimers(in int p_deduction)
+        internal bool DecrementTimer(in int p_deduction)
         {
             bool _timeout = false;
             if (HasTotalTimeLimit)
