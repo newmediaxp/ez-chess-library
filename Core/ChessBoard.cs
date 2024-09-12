@@ -59,12 +59,14 @@
             blackMoves.Clear();
             SetFEN(!string.IsNullOrEmpty(p_fen) ? p_fen : ChessNotation.defaultFEN);
             CountPieces();
-            MatchStatus = ChessMatchStatus.Paused;
+            IdentifyValidMoves(CurrentColor.Inverse());
+            IdentifyValidMoves(CurrentColor);
+            CheckIfGameOver();
+            if (MatchStatus == ChessMatchStatus.NotConfigured) MatchStatus = ChessMatchStatus.Paused;
         }
 
         internal ChessBoard CreateDeepClone()
         {
-            if (MatchStatus == ChessMatchStatus.NotConfigured) throw new InvalidOperationException(msg_boardNotConfigured);
             ChessBoard _board = new ChessBoard()
             {
                 MatchStatus = MatchStatus,
@@ -162,7 +164,6 @@
 
         internal bool IsPositionInCheck(in Coordinate2D p_position, in ChessPieceColor p_color)
         {
-            if (MatchStatus == ChessMatchStatus.NotConfigured) throw new InvalidOperationException(msg_boardNotConfigured);
             if (!p_position.IsValid()) throw new InvalidOperationException(msg_positionInvalid);
             foreach (ChessMove _move in GetMovesRef(p_color.Inverse())) if (_move.self_to.EquivalentTo(p_position)) return true;
             return false;
@@ -187,7 +188,6 @@
 
         internal bool IsColorInCheck(in ChessPieceColor p_color)
         {
-            if (MatchStatus == ChessMatchStatus.NotConfigured) throw new InvalidOperationException(msg_boardNotConfigured);
             return p_color switch
             {
                 ChessPieceColor.White => WhiteCheckedPosition != null,
@@ -279,7 +279,7 @@
                     if (_moveNotation_piece.type != ChessPieceType.Pawn) moveNotation.Append(ChessNotation.GetNotation(_moveNotation_piece.type));
                     bool _ambiguity = false;
                     foreach (ChessMove _move in GetMovesRef(_moveNotation_piece.color))
-                        if (!_move.EquivalentTo_SelfFrom(p_move) && pieces[_move.self_from.GetIndex()]!.type == _moveNotation_piece.type
+                        if (!_move.Equivalent_From(p_move) && pieces[_move.self_from.GetIndex()]!.type == _moveNotation_piece.type
                             && _move.Equivalent_To(p_move)) { _ambiguity = true; break; }
                     if (_ambiguity)
                     {
@@ -354,13 +354,6 @@
         {
             if (MatchStatus == ChessMatchStatus.NotConfigured) throw new InvalidOperationException(msg_boardNotConfigured);
             if (MatchStatus != ChessMatchStatus.Paused) throw new InvalidOperationException(msg_turnInvalid);
-            if (TurnCount == 0)
-            {
-                CountPieces();
-                IdentifyValidMoves(CurrentColor.Inverse());
-                IdentifyValidMoves(CurrentColor);
-                CheckIfGameOver();
-            }
             MatchStatus = ChessMatchStatus.Running;
         }
 

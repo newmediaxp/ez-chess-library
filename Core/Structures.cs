@@ -113,7 +113,7 @@
         /// <summary>
         /// Check equivalance on the basis of <c>self_from</c>
         /// </summary>
-        public readonly bool EquivalentTo_SelfFrom(in ChessMove p_move) => self_from.EquivalentTo(p_move.self_from);
+        public readonly bool Equivalent_From(in ChessMove p_move) => self_from.EquivalentTo(p_move.self_from);
 
         /// <summary>
         /// Check equivalance on the basis of <c>self_to</c>

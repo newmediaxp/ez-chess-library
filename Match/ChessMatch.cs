@@ -12,7 +12,7 @@
         private ChessMatchState boardState;
         private readonly Stack<ChessMatchState> playedBoardStates, undoBoardStates;
         private readonly CancellationTokenSource bgTasksCts;
-        private const int clockRate = 10;
+        private const int clockRate = 10, minBotDelay = 100;
         public event Action? OnBoardUpdated, OnBotMoved, OnTimerUpdated;
         public bool whiteIsBot, blackIsBot;
         private const string
@@ -42,14 +42,12 @@
             playedBoardStates = new Stack<ChessMatchState>();
             undoBoardStates = new Stack<ChessMatchState>();
             bgTasksCts = new CancellationTokenSource();
-            OnBoardUpdated += OnTimerUpdated;
             CheckPlayTimers(bgTasksCts.Token);
             HandleBotMoves(bgTasksCts.Token);
         }
 
         ~ChessMatch()
         {
-            OnBoardUpdated -= OnTimerUpdated;
             bgTasksCts.Cancel();
         }
 
@@ -58,8 +56,10 @@
             playedBoardStates.Clear();
             undoBoardStates.Clear();
             Board.Configure(p_fen);
+            OnBoardUpdated?.Invoke();
             WhiteTimer.Set(p_totalTimeLimit, p_moveTimeLimit);
             BlackTimer.Set(p_totalTimeLimit, p_moveTimeLimit);
+            OnTimerUpdated?.Invoke();
         }
 
         public List<ChessMove>? GetMoves(in Coordinate2D p_position)
@@ -144,7 +144,7 @@
                     ChessMove? _move = GetRandomMove();
                     //ChessMove? _move = GetBestMove(4);
                     if (!_move.HasValue) throw new InvalidOperationException("bot has no move");
-                    await Task.Yield();
+                    await Task.Delay(minBotDelay, p_token);
                     if (Board.MatchStatus != ChessMatchStatus.Running) continue;
                     (bool error, string message) = ApplyMove(_move.Value);
                     if (error) throw new InvalidOperationException($"error while applying bot move : {message}");
