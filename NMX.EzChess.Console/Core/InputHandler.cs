@@ -1,6 +1,6 @@
 ﻿namespace NMX.EzChess.Console.Core;
 
-using NMX.EzChess.Library.Core;
+using Library.Core;
 using System;
 using System.Text.RegularExpressions;
 

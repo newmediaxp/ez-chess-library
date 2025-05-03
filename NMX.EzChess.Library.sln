@@ -6,6 +6,9 @@ MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NMX.EzChess.Library", "NMX.EzChess.Library\NMX.EzChess.Library.csproj", "{D8F1904D-0088-41DA-80FD-3D5A187AC3A7}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NMX.EzChess.Console", "NMX.EzChess.Console\NMX.EzChess.Console.csproj", "{C02B0794-64DF-40D4-8644-778B3E559D25}"
+	ProjectSection(ProjectDependencies) = postProject
+		{D8F1904D-0088-41DA-80FD-3D5A187AC3A7} = {D8F1904D-0088-41DA-80FD-3D5A187AC3A7}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -8,13 +8,17 @@
     <InvariantGlobalization>true</InvariantGlobalization>
     <EnableNETAnalyzers>True</EnableNETAnalyzers>
     <AnalysisLevel>latest</AnalysisLevel>
-    <PublishAot>True</PublishAot>
+    <PublishAot>False</PublishAot>
+    <Title>Ez Chess Console</Title>
+    <Version>0.1.0</Version>
+    <Authors>AnimaxNeil</Authors>
+    <Company>New Media XP</Company>
+    <Copyright>New Media XP</Copyright>
+    <PublishTrimmed>True</PublishTrimmed>
   </PropertyGroup>
 
   <ItemGroup>
-    <Reference Include="NMX.EzChess.Library">
-      <HintPath>..\NMX.EzChess.Library\bin\Debug\netstandard2.1\NMX.EzChess.Library.dll</HintPath>
-    </Reference>
+    <ProjectReference Include="..\NMX.EzChess.Library\NMX.EzChess.Library.csproj" />
   </ItemGroup>
 
 </Project>

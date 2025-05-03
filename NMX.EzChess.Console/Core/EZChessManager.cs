@@ -1,7 +1,7 @@
 ﻿namespace NMX.EzChess.Console.Core;
 
-using NMX.EzChess.Library.Core;
-using NMX.EzChess.Library.Match;
+using Library.Core;
+using Library.Match;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -22,7 +22,7 @@ internal static class EZChessManager
         msg_moveNotApplicable = "cannot apply given move";
     private const string
         appName = "Ez Chess",
-        appVersion = "v0.4";
+        appVersion = "v0.1.0";
 
     private static bool NeedsRotation => rotation && match.Board.CurrentColor == ChessPieceColor.Black;
 

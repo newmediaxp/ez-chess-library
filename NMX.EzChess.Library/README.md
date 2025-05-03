@@ -1,0 +1,44 @@
+# EzCess Library
+
+`chess` `C#` `library` `dll`
+
+&copy; NewMediaXP  
+|
+[website](https://www.newmediaxp.com)
+|
+[email](mailto:contact@newmediaxp.com)
+|
+
+---
+
+## Description
+
+A chess engine written in C#.
+
+---
+
+## Details
+
+* Released on *3 April 2025*
+
+* Dependencies
+
+    * .Net Standard 2.1
+
+* Used in
+
+    * EzCess Console [(link)](../NMX.EzCess.Console)
+
+* Downloads
+
+    * [Github](https://github.com/newmediaxp/ez-chess-library/releases)
+
+---
+
+## Contact
+
+* Link: https://www.newmediaxp.com/contact
+* Email-1: contact@newmediaxp.com
+* Email-2: animaxneil@gmail.com
+
+---

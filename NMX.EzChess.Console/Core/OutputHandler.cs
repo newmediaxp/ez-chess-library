@@ -1,7 +1,7 @@
 ﻿namespace NMX.EzChess.Console.Core;
 
-using NMX.EzChess.Library.Core;
-using NMX.EzChess.Library.Match;
+using Library.Core;
+using Library.Match;
 using System;
 using System.Text;
 
