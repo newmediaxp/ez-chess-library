@@ -1,4 +1,4 @@
-# EzCess Library
+# Ez Chess Library
 
 `chess` `C#` `library` `dll`
 
@@ -27,7 +27,7 @@ A chess engine written in C#.
 
 * Used in
 
-    * EzCess Console [(link)](../NMX.EzCess.Console)
+    * Ez Chess Console [(link)](../NMX.EzChess.Console)
 
 * Downloads
 

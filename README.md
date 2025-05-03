@@ -1,4 +1,4 @@
-# EzChess
+# Ez Chess
 
 `chess` `C#`
 
@@ -8,12 +8,6 @@
 |
 [email](mailto:contact@newmediaxp.com)
 |
-
-* NMX.EzChess.Library
-    > A chess engine written in C#.
-
-* NMX.EzChess.Console
-    > A CLI chess application written in C#.
     
 ---
 

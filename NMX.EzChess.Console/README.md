@@ -1,4 +1,4 @@
-# EzChess Console
+# Ez Chess Console
 
 `chess` `C#` `app` `cli`
 
@@ -24,7 +24,7 @@ A CLI chess application written in C#.
 * Dependencies
 
     * .Net 8.0
-    * EzChess Library [(link)](../NMX.EzChess.Library)
+    * Ez Chess Library [(link)](../NMX.EzChess.Library)
 
 * Downloads
 
