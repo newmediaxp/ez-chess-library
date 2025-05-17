@@ -37,8 +37,8 @@ A chess engine written in C#.
 
 ## Contact
 
-* Link: https://www.newmediaxp.com/contact
-* Email-1: contact@newmediaxp.com
-* Email-2: animaxneil@gmail.com
+* Link: <https://www.newmediaxp.com/contact>
+* Email-1: <contact@newmediaxp.com>
+* Email-2: <animaxneil@gmail.com>
 
 ---
