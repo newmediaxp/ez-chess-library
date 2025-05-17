@@ -2,7 +2,7 @@
 
 `chess` `C#`
 
-&copy; NewMediaXP  
+&copy; New Media XP  
 |
 [website](https://www.newmediaxp.com)
 |
